@@ -37,7 +37,7 @@
 #include "Util/NoticeCenter.h"
 #include "Network/sockutil.h"
 
-#define RTSP_SERVER_SEND_RTCP 0
+#define RTSP_SERVER_SEND_RTCP 1
 
 using namespace std;
 using namespace toolkit;
@@ -130,8 +130,8 @@ void RtspSession::onManager() {
 
 	if ((_rtpType == Rtsp::RTP_UDP || _pushSrc ) && _ticker.elapsedTime() > keep_alive_sec * 1000) {
 		//如果是推流端或者rtp over udp类型的播放端，那么就做超时检测
-        shutdown(SockException(Err_timeout,"rtp over udp session timeouted"));
-        return;
+       // shutdown(SockException(Err_timeout,"rtp over udp session timeouted"));
+        //return;
 	}
 }
 
@@ -1175,13 +1175,13 @@ void RtspSession::sendRtpPacket(const RtpPacket::Ptr & pkt) {
     }
     RtcpCounter &counter = _aRtcpCnt[iTrackIndex];
     counter.pktCnt += 1;
-    counter.octCount += (pkt->length - pkt->offset);
+    counter.octCount += (pkt->size() - pkt->offset);
     auto &ticker = _aRtcpTicker[iTrackIndex];
     if (ticker.elapsedTime() > 5 * 1000) {
         //send rtcp every 5 second
         ticker.resetTime();
         //直接保存网络字节序
-        memcpy(&counter.timeStamp, pkt->payload + 8 , 4);
+        memcpy(&counter.timeStamp, pkt->data() + 8 , 4);
         sendSenderReport(_rtpType == Rtsp::RTP_TCP,iTrackIndex);
     }
 #endif
